@@ -4,6 +4,7 @@ import {upload} from '../middlewares/uploadMiddleware';
 import verifyToken from '../middlewares/authMiddleware';
 import isAdmin from '../middlewares/adminMiddleware';
 import isManager from '../middlewares/isManager';
+import isEmployee from '../middlewares/isEmployee';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.post('/registration', upload.single('image'), registration);
 router.post('/login', login);
 router.get('/getAllUserAdmin', verifyToken, isAdmin, getAllUser);
 router.get('/getAllUserManager', verifyToken, isManager, getAllUser);
+
 
 
 export default router;
