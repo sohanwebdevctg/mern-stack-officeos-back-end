@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
-const isAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const isManager = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 
   try {
 
     // get token user
-  const user = req.user;
+    const user = req.user;
 
     if (!user) {
       res.status(401).json({ 
@@ -16,10 +16,10 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction): Promise
     }
 
     // check user role
-    if (user.userRoleName !== 'admin') {
+    if (user.userRoleName !== 'manager') {
       res.status(403).json({
         success: false,
-        message: 'Access Denied! Only admins can access this route.',
+        message: 'Access Denied! Only managers can access this route.',
       });
       return;
     }
@@ -29,10 +29,10 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction): Promise
   } catch (error: any) {
     res.status(500).json({ 
       success: false, 
-      message: error.message || 'Server error in isAdmin guard.' 
+      message: error.message || 'Server error in isManager guard.' 
     });
     return;
   }
 };
 
-export default isAdmin;
+export default isManager;
