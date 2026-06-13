@@ -100,6 +100,15 @@ const registration = async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.log(error.message);
     console.log('registration error.');
+
+    // If an error occurs and there are images in the uploads/ folder, they will be deleted immediately.
+    if (req.file && req.file.path) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
+      }
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'Internal Server Error during registration.'
