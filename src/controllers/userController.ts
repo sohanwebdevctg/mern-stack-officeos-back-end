@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import axios from "axios";
 import fs from "fs";
 import User from "../models/userModel";
@@ -108,7 +109,6 @@ const registration = async (req: Request, res: Response): Promise<void> => {
         console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
       }
     }
-
     res.status(500).json({
       success: false,
       message: error.message || 'Internal Server Error during registration.'
@@ -120,13 +120,100 @@ const registration = async (req: Request, res: Response): Promise<void> => {
 // login
 const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.status(200).json({
+
+    const {email, password} = req.body;
+
+    // Validation: If email or password is not sent
+    if (!email || !password) {
+      res.status(400).json({
+        success: false,
+        message: "Email and password are required!",
+      });
+      return;
+    }
+
+    //  Find user by email in database
+    const user = await User.findOne({ email: email });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found! Please register first.",
+      });
+      return;
+    }
+
+    // If the user account is not role
+    if (user.roleName === null) {
+      res.status(403).json({
+        success: false,
+        message: "Access denied! You do not have a assigned role. Please contact Admin.",
+      });
+      return;
+    }
+
+    // If the user account is not role and pending
+    if (user.isActive === false) {
+      res.status(403).json({
+        success: false,
+        message: "Your account is pending activation! Please contact Admin.",
+      });
+      return;
+    }
+
+    // Compare front-end password with database hashed password
+    const isPasswordMatch = await bcrypt.compare(password, user.password as string);
+
+    if (!isPasswordMatch) {
+      res.status(401).json({
+        success: false,
+        message: "Invalid email or password!",
+      });
+      return;
+    }
+
+    // create token data
+    const userData = { 
+      userId: user._id, 
+      userEmail: user.email, 
+      userRoleName: user.roleName,
+      userIsActive: user.isActive
+    }
+
+    // JWT Token Generate
+    const token = jwt.sign(userData, process.env.JWT_SECRET as string,{ expiresIn: "1d" });
+
+    if(!token){
+      res.status(401).json({
+        success: false,
+        message: "Invalid email or password!"
+      });
+      return;
+    }else{
+      res.status(200).json({
       success: true,
-      message: "login success",
+      message: "Login successful!",
+      token: token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        roleName: user.roleName,
+        isActive: user.isActive,
+      },
     });
+    return;
+    }
   } catch (error: any) {
     console.log(error.message);
     console.log("login error.");
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during registration.'
+    });
+    return;
   }
 };
 
