@@ -217,4 +217,26 @@ const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { registration, login };
+// getAllUser
+const getAllUser = async (req: Request, res: Response): Promise<void> => {
+  try{
+
+    res.status(200).json({
+      success: true,
+      message: 'success'
+    });
+    return;
+
+  }catch(error:any){
+    console.log(error.message);
+    console.log("login error.");
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during registration.'
+    });
+    return;
+  }
+}
+
+export { registration, login, getAllUser };

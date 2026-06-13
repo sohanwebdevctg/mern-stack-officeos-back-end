@@ -1,12 +1,14 @@
 import {Router} from 'express';
-import {registration, login} from '../controllers/userController';
+import {registration, login, getAllUser} from '../controllers/userController';
 import {upload} from '../middlewares/uploadMiddleware';
+import verifyToken from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // user router and controller
 router.post('/registration', upload.single('image'), registration);
 router.post('/login', login);
+router.get('/getAllUser', verifyToken, getAllUser);
 
 
 
