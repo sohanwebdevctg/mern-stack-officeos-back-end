@@ -221,15 +221,55 @@ const login = async (req: Request, res: Response): Promise<void> => {
 const getAllUser = async (req: Request, res: Response): Promise<void> => {
   try{
 
-    res.status(200).json({
-      success: true,
-      message: 'success'
-    });
-    return;
+  // get token currentUser
+  const currentUser = req.user;
+
+  // check user
+  if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! User information not found.',
+      });
+      return;
+    }
+
+    // check user active status
+    if (currentUser.userIsActive === false) {
+      res.status(403).json({
+        success: false,
+        message: 'Your account is deactivated! Please contact main Admin.',
+      });
+      return;
+    }
+
+    // check user role admin or manager
+    if(currentUser.userRoleName === 'admin' || currentUser.userRoleName === 'manager'){
+
+      // get all user data
+      const allUsers = await User.find().select('-password');
+
+      res.status(200).json({
+        success: true,
+        message: 'All users fetched successfully!',
+        totalUsers: allUsers.length,
+        data: allUsers,
+      });
+      return;
+
+    }else {
+      
+      // if another role try to access
+      res.status(403).json({
+        success: false,
+        message: 'Access denied! Unauthorized role.',
+      });
+      return;
+    }
+
 
   }catch(error:any){
+    console.log("server error.");
     console.log(error.message);
-    console.log("login error.");
 
     res.status(500).json({
       success: false,
