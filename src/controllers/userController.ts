@@ -439,4 +439,139 @@ const updateUserStatusAndRole = async (req: Request, res: Response): Promise<voi
 
 };
 
-export { registration, login, getAllUser, getSingleUser, updateUserStatusAndRole };
+// update single user
+const updateSingleUser = async (req: Request, res: Response): Promise<void> => {
+
+  try{
+
+    // get all data
+    const { id } = req.params;
+    const { name, email, password } = req.body;
+    const currentUser = req.user;
+
+    // validation the current user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // check the user id
+    if (currentUser.userId !== id) {
+      res.status(400).json({
+        success: false,
+        message: 'Access Denied! You are not valid user?',
+      });
+      return;
+    }
+
+    // check user exists
+    const userExists = await User.findById(id);
+    if (!userExists) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found!',
+      });
+      return;
+    }
+
+    // dynamic update object create
+    const updateData: any = {};
+    
+    // set previous name if not get user
+    if (name !== undefined){
+      updateData.name = name;
+    }
+
+    // set email role if not get user
+    if (email !== undefined){
+      updateData.email = email;
+    }
+
+    // set password if not get user
+    if (password !== undefined && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    // check image
+    if (req.file) {
+
+      // get the image path
+      const filePath = req.file.path;
+
+      // convert local file
+      const fileData = fs.readFileSync(filePath);
+      const base64Image = fileData.toString("base64");
+
+      // creating formData
+      const params = new URLSearchParams();
+      params.append("image", base64Image);
+
+      // sending post request to imagebb api
+      const imgbbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+        params
+      );
+
+      // push to live url object if upload is successful
+      if (imgbbResponse.data && imgbbResponse.data.data.url) {
+        updateData.image = imgbbResponse.data.data.url;
+      }
+
+      // delete the upload file from local folder
+      fs.unlinkSync(filePath);
+    }
+
+    // check the length 
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'No fields provided for update (name, email, password, or image required).',
+      });
+      return;
+    }
+
+    // set the user update data
+    const updatedUser = await User.findByIdAndUpdate(id,{ $set: updateData },{ new: true, runValidators: true }).select('-password');
+
+    if (!updatedUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid User',
+      });
+      return;
+    } else {
+      res.status(200).json({
+        success: true,
+        message: 'Your profile updated successfully!',
+        data: updatedUser,
+      });
+      return;
+    }
+
+  }catch(error: any){
+    console.log("server error.");
+    console.log(error.message);
+
+    // if user is not update clean the image
+    if (req.file && req.file.path) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during registration.'
+    });
+    return;
+  }
+}
+
+
+
+export { registration, login, getAllUser, getSingleUser, updateUserStatusAndRole, updateSingleUser };
