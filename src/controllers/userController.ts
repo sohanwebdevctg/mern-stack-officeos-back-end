@@ -34,7 +34,7 @@ const registration = async (req: Request, res: Response): Promise<void> => {
     let imageUrl = "default-image.png";
 
     if (req.file) {
-      // The path to the file that Marlter saved to our 'uploads/' folder
+      // The path to the file that Malter saved to our 'uploads/' folder
       const filePath = req.file.path;
 
       // Convert the file to Base64 format (rules for sending to ImgBB)
