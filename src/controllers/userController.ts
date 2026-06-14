@@ -279,4 +279,164 @@ const getAllUser = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export { registration, login, getAllUser };
+// get single user data
+const getSingleUser = async (req: Request, res: Response): Promise<void> => {
+
+  try{
+
+    // get user id and user token
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    // valid the current user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // check the user status
+    if (currentUser.userIsActive === false) {
+      res.status(403).json({
+        success: false,
+        message: 'Your account is deactivated! Access denied.',
+      });
+      return;
+    }
+
+    // check the role access
+    if (currentUser.userRoleName !== 'admin' && currentUser.userRoleName !== 'manager') {
+      if (currentUser.userId !== id) {
+        res.status(403).json({
+          success: false,
+          message: 'Access Denied! You can only view your own profile.',
+        });
+        return;
+      }
+    }
+
+    // find the user
+    const user = await User.findById(id).select('-password');
+
+    if(!user){
+      res.status(404).json({
+        success: false,
+        message: 'User not found!',
+      });
+      return;
+    }else{
+      res.status(200).json({
+      success: true,
+      message: 'User profile fetched successfully!',
+      data: user,
+    });
+      return;
+    }
+
+
+  }catch(error:any){
+    console.log("server error.");
+    console.log(error.message);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during registration.'
+    });
+    return;
+  }
+
+}
+
+// update user role and status
+const updateUserStatusAndRole = async (req: Request, res: Response): Promise<void> => {
+
+  try{
+
+    // get all data
+    const { id } = req.params;
+    const { roleName, isActive } = req.body;
+    const currentUser = req.user;
+
+    // validation the current user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // check the user id
+    if (currentUser.userId === id) {
+      res.status(400).json({
+        success: false,
+        message: 'Access Denied! You cannot update your own role or active status. Let another admin do it.',
+      });
+      return;
+    }
+
+    // check user exists
+    const userExists = await User.findById(id);
+    if (!userExists) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found!',
+      });
+      return;
+    }
+
+    // dynamic update object create
+    const updateData: any = {};
+    
+    // set previous role if not get user
+    if (roleName !== undefined){
+      updateData.roleName = roleName;
+    }
+
+    // set previous status if not get user
+    if (isActive !== undefined){
+      updateData.isActive = isActive;
+    }
+
+    // If nothing is sent in the body
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'No fields provided for update (roleName or isActive required).',
+      });
+      return;
+    }
+
+    // Updating the database and returning the updated new data
+    const updatedUser = await User.findByIdAndUpdate(id,{ $set: updateData },{ new: true, runValidators: true }).select('-password');
+
+    if(!updatedUser){
+      res.status(401).json({
+      success: false,
+      message: 'Invalid User',
+    });
+    }else{
+      res.status(200).json({
+      success: true,
+      message: 'User role/status updated successfully!',
+      data: updatedUser,
+    });
+    return;
+    }
+
+  }catch(error: any){
+    console.log("server error.");
+    console.log(error.message);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during registration.'
+    });
+    return;
+  }
+
+};
+
+export { registration, login, getAllUser, getSingleUser, updateUserStatusAndRole };
