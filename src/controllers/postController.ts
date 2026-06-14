@@ -3,7 +3,7 @@ import fs from 'fs';
 import axios from 'axios';
 import Post from '../models/postModel';
 
-
+// create post
 const createPost = async (req: Request, res: Response): Promise<void> => {
   try {
 
