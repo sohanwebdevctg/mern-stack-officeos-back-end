@@ -145,9 +145,10 @@ const getAllPost = async (req: Request, res: Response): Promise<void> => {
 
 };
 
-// getSinglePost
+// get single post
 const getSinglePost = async (req: Request, res: Response): Promise<void> => {
   try {
+
     // get data params and user token data
     const { id } = req.params;
     const currentUser = req.user;
@@ -200,6 +201,64 @@ const getSinglePost = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// delete single post
+const deleteSinglePost = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    // get data params and user token data
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    // check the validation
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // check the validate id
+    const post = await Post.findById(id);
+    if (!post) {
+      res.status(404).json({
+        success: false,
+        message: 'Post not found!',
+      });
+      return;
+    }
+
+    // checking whether the person trying to delete is the real owner or not
+    if (post.user.toString() !== currentUser.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! You cannot delete someone else post.',
+      });
+      return;
+    }
+
+    // delete the post
+    await Post.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Post deleted successfully!',
+    });
+    return;
+
+  } catch (error: any) {
+
+    console.log(error.message);
+    console.log('post error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while deleting post.',
+    });
+    return;
+  }
+};
 
 
-export { createPost, getAllPost, getSinglePost };
+
+export { createPost, getAllPost, getSinglePost, deleteSinglePost };
