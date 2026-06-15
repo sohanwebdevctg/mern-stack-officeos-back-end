@@ -123,6 +123,7 @@ const getAllPost = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+    // send the success post
       res.status(200).json({
       success: true,
       count: posts.length,
@@ -130,8 +131,6 @@ const getAllPost = async (req: Request, res: Response): Promise<void> => {
       data: posts,
     });
     return;
-
-    
 
   } catch (error: any) {
 
@@ -146,6 +145,61 @@ const getAllPost = async (req: Request, res: Response): Promise<void> => {
 
 };
 
+// getSinglePost
+const getSinglePost = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get data params and user token data
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    // validation the token
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // check the post id
+    const post = await Post.findById(id);
+    if (!post) {
+      res.status(404).json({
+        success: false,
+        message: 'Post not found!',
+      });
+      return;
+    }
+
+    // checking whether the user id of the post is the same as the logged in user id
+    if (post.user.toString() !== currentUser.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! You are not the owner of this post.',
+      });
+      return;
+    }
+
+    // send the success data
+    res.status(200).json({
+      success: true,
+      message: 'Single post retrieved successfully!',
+      data: post,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('post error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while fetching single post.',
+    });
+    return;
+  }
+};
 
 
-export { createPost, getAllPost };
+
+export { createPost, getAllPost, getSinglePost };
