@@ -107,6 +107,45 @@ const createPost = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// getAllPost
+const getAllPost = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    // find the post and get user info
+    const posts = await Post.find().populate('user', 'name email image').sort({ createdAt: -1 });
+
+    // if no post here
+    if (!posts || posts.length === 0) {
+      res.status(200).json({
+        success: true,
+        message: 'No posts available right now.',
+        data: [],
+      });
+      return;
+    }
+      res.status(200).json({
+      success: true,
+      count: posts.length,
+      message: 'All posts retrieved successfully!',
+      data: posts,
+    });
+    return;
+
+    
+
+  } catch (error: any) {
+
+    console.log(error.message);
+    console.log('post error.');
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while fetching posts.',
+    });
+    return;
+  }
+
+};
 
 
-export { createPost };
+
+export { createPost, getAllPost };
