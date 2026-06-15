@@ -201,6 +201,133 @@ const getSinglePost = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// update single post
+const updateSinglePost = async (req: Request, res: Response): Promise<void> => {
+try {
+
+  // get user id, data and token information
+    const { id } = req.params;
+    const { title, description } = req.body;
+    const currentUser = req.user;
+
+    // token validation
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // find the data
+    const postExists = await Post.findById(id);
+    if (!postExists) {
+      res.status(404).json({
+        success: false,
+        message: 'Post not found!',
+      });
+      return;
+    }
+
+    // check the valid user
+    if (postExists.user.toString() !== currentUser.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! You are not allowed to update someone else post.',
+      });
+      return;
+    }
+
+    // dynamic update object create
+    const updateData: any = {};
+
+    // set previous title if not get user
+    if (title !== undefined) {
+      updateData.title = title;
+    }
+
+    // set previous description if not get user
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    // check image
+    if (req.file) {
+
+      // get the image path
+      const filePath = req.file.path;
+
+      // convert local file
+      const fileData = fs.readFileSync(filePath);
+      const base64Image = fileData.toString("base64");
+
+      // creating formData
+      const params = new URLSearchParams();
+      params.append("image", base64Image);
+
+      // sending post request to imagebb api
+      const imgbbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+        params
+      );
+
+      // push to live url object if upload is successful
+      if (imgbbResponse.data && imgbbResponse.data.data.url) {
+        updateData.image = imgbbResponse.data.data.url;
+      }
+
+      // delete the upload file from local folder
+      fs.unlinkSync(filePath);
+    }
+
+    // check the length
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'No fields provided for update (title, description, or image required).',
+      });
+      return;
+    }
+
+    // set the post update data
+    const updatedPost = await Post.findByIdAndUpdate(id,{ $set: updateData },{ new: true, runValidators: true });
+
+    if (!updatedPost) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid Post',
+      });
+      return;
+    } else {
+      res.status(200).json({
+        success: true,
+        message: 'Your post updated successfully!',
+        data: updatedPost,
+      });
+      return;
+    }
+
+  } catch (error: any) {
+
+    console.log(error.message);
+    console.log('post error.');
+
+    // if user is not update clean the image
+    if (req.file && req.file.path) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during updating post.'
+    });
+    return;
+  }
+}
+
 // delete single post
 const deleteSinglePost = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -261,4 +388,4 @@ const deleteSinglePost = async (req: Request, res: Response): Promise<void> => {
 
 
 
-export { createPost, getAllPost, getSinglePost, deleteSinglePost };
+export { createPost, getAllPost, getSinglePost, updateSinglePost, deleteSinglePost };
