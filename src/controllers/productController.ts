@@ -109,4 +109,53 @@ const createProduct = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export {createProduct};
+// get admin product only admin can see
+const getAdminProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user token
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser || currentUser.userRoleName !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! Only Admin can access this data.',
+      });
+      return;
+    }
+
+    // get all product
+    const allProducts = await Product.find({}).populate('createdBy', 'name email').sort({ createdAt: -1 });
+
+    // if no products here
+    if (!allProducts || allProducts.length === 0) {
+      res.status(200).json({
+        success: true,
+        message: 'No products available right now.',
+        data: [],
+      });
+      return;
+    }
+
+    // send the success products for admin table
+    res.status(200).json({
+      success: true,
+      count: allProducts.length,
+      message: 'All products retrieved successfully for Admin table (Latest First).',
+      data: allProducts,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('getAdminProduct error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while fetching admin products.',
+    });
+    return;
+  }
+};
+
+export {createProduct, getAdminProduct};
