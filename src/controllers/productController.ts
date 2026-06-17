@@ -258,5 +258,56 @@ const getSingleProduct = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// approvedProduct
+const approveProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user token
+    const currentUser = req.user;
 
-export {createProduct, getAdminProduct, getAllProduct, getSingleProduct};
+    // validation the user (কড়া লক: শুধুমাত্র এডমিন অ্যাপ্রুভ করতে পারবে)
+    if (!currentUser || currentUser.userRoleName !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! Only Admin can approve products.',
+      });
+      return;
+    }
+
+    // get data
+    const { id } = req.params;
+    const { isApproved } = req.body;
+
+    // update product
+    const approvedProduct = await Product.findByIdAndUpdate(id,{ isApproved: isApproved },{ new: true });
+
+    // if product not found
+    if (!approvedProduct) {
+      res.status(404).json({
+        success: false,
+        message: 'Product not found!',
+      });
+      return;
+    }
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      message: 'Product approved successfully! Now it is visible to users.',
+      data: approvedProduct,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('approveProduct error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during product approval.',
+    });
+    return;
+  }
+};
+
+
+export {createProduct, getAdminProduct, getAllProduct, getSingleProduct, approveProduct};
