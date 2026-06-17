@@ -209,5 +209,54 @@ const getAllProduct = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// get single product
+const getSingleProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user token
+    const currentUser = req.user;
 
-export {createProduct, getAdminProduct, getAllProduct};
+    // validation the user
+    if (!currentUser || currentUser.userRoleName !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! Only Admin can fetch single product details.',
+      });
+      return;
+    }
+
+    const { id } = req.params;
+
+    // find the user
+    const singleProduct = await Product.findById(id);
+
+    // if product not found in database
+    if (!singleProduct) {
+      res.status(404).json({
+        success: false,
+        message: 'Product not found!',
+      });
+      return;
+    }
+
+    // send success response for admin
+    res.status(200).json({
+      success: true,
+      message: 'Single product retrieved successfully for Admin.',
+      data: singleProduct,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('getSingleProduct error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while fetching single product.',
+    });
+    return;
+  }
+};
+
+
+export {createProduct, getAdminProduct, getAllProduct, getSingleProduct};
