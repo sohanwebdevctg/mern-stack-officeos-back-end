@@ -158,4 +158,56 @@ const getAdminProduct = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export {createProduct, getAdminProduct};
+// get all approved products
+const getAllProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    // get user token
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser) {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! Only Admin can access this data.',
+      });
+      return;
+    }
+
+    // only products that have been approved by the admin
+    const approvedProducts = await Product.find({ isApproved: true })
+      .populate('createdBy', 'name image').sort({ createdAt: -1 });
+
+    // if no approved products here
+    if (!approvedProducts || approvedProducts.length === 0) {
+      res.status(200).json({
+        success: true,
+        message: 'No approved products available right now.',
+        data: [],
+      });
+      return;
+    }
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      count: approvedProducts.length,
+      message: 'All approved products retrieved successfully for user cards (Latest First).',
+      data: approvedProducts,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('getAllProduct error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error while fetching products.',
+    });
+    return;
+  }
+};
+
+
+export {createProduct, getAdminProduct, getAllProduct};

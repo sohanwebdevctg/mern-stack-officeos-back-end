@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {createProduct, getAdminProduct} from '../controllers/productController';
+import {createProduct, getAdminProduct, getAllProduct} from '../controllers/productController';
 import {upload} from '../middlewares/uploadMiddleware';
 import verifyToken from '../middlewares/authMiddleware';
 import isAdmin from '../middlewares/adminMiddleware';
@@ -10,6 +10,7 @@ const router = Router();
 
 router.post('/createProduct', verifyToken, upload.single('image'), createProduct);
 router.get('/getAdminProduct', verifyToken, isAdmin, getAdminProduct);
+router.get('/getAllProduct', verifyToken, getAllProduct);
 
 
 export default router;
