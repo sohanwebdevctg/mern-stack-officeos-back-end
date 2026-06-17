@@ -1,0 +1,112 @@
+import { Request, Response } from 'express';
+import axios from "axios";
+import fs from "fs";
+import Product from '../models/productModel';
+
+// create product
+const createProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user token
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // get user request data
+    const { name, description, price, limit } = req.body;
+
+    // Validation: required fields check
+    if (!name || !description || !price || !limit) {
+      res.status(400).json({
+        success: false,
+        message: "Name, description, price, and limit are required!",
+      });
+      return;
+    }
+
+    // Image Handling (Default image name)
+    let imageUrl = "default-product.png";
+
+    if (req.file) {
+      // The path to the file that Multer saved to our 'uploads/' folder
+      const filePath = req.file.path;
+
+      // Convert the file to Base64 format (rules for sending to ImgBB)
+      const fileData = fs.readFileSync(filePath);
+      const base64Image = fileData.toString("base64");
+
+      // Arrange the object as FormData to send data to the ImgBB API
+      const params = new URLSearchParams();
+      params.append("image", base64Image);
+
+      // Sending POST request to ImgBB API
+      const imgbbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+        params
+      );
+
+      // Get the live URL link if the upload is successful
+      if (imgbbResponse.data && imgbbResponse.data.data.url) {
+        imageUrl = imgbbResponse.data.data.url;
+      }
+
+      // Security and space saving: Delete the file from the local 'uploads/' folder after uploading to ImgBB
+      fs.unlinkSync(filePath);
+    }
+
+    // Create new product object
+    const createNewProduct = new Product({
+      name: name,
+      description: description,
+      price: price,
+      limit: limit,
+      image: imageUrl,
+      isApproved: false, 
+      createdBy: currentUser.userId,
+    });
+
+    // save new product in database
+    const newProduct = await createNewProduct.save();
+
+    if (!newProduct) {
+      res.status(404).json({
+        success: false,
+        message: "Can not create product",
+      });
+      return;
+    } else {
+      res.status(201).json({
+        success: true,
+        message: "Product created successfully! Pending for Admin approval.",
+        data: newProduct,
+      });
+      return;
+    }
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('create product error.');
+
+    // If an error occurs and there are images in the uploads/ folder, they will be deleted immediately.
+    if (req.file && req.file.path) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during product creation.'
+    });
+    return;
+  }
+}
+
+export {createProduct};

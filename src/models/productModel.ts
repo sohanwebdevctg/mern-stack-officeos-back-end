@@ -27,7 +27,7 @@ const ProductSchema: Schema = new Schema({
   },
   limit: { 
     type: Number, 
-    required: true 
+    required: true
   },
   image: { 
     type: String, 

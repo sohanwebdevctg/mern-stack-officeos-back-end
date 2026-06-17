@@ -3,6 +3,7 @@ import cors = require('cors');
 import userRouter from './routes/userRouter';
 import postRouter from './routes/postRouter';
 import attendanceRouter from './routes/attendanceRouter';
+import productRouter from './routes/productRouter';
 const app = express();
 
 // middleware
@@ -15,6 +16,7 @@ app.use(express.urlencoded({extended: true}));
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/post', postRouter);
 app.use('/api/v1/attendance', attendanceRouter);
+app.use('/api/v1/product', productRouter);
 
 
 // server running method
