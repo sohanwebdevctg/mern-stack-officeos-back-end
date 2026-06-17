@@ -444,7 +444,7 @@ const updateSingleUser = async (req: Request, res: Response): Promise<void> => {
 
   try{
 
-    // get all data
+    // get all data and token
     const { id } = req.params;
     const { name, email, password } = req.body;
     const currentUser = req.user;
@@ -571,6 +571,8 @@ const updateSingleUser = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 }
+
+
 
 
 

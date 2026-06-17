@@ -264,7 +264,7 @@ const approveProduct = async (req: Request, res: Response): Promise<void> => {
     // get user token
     const currentUser = req.user;
 
-    // validation the user (কড়া লক: শুধুমাত্র এডমিন অ্যাপ্রুভ করতে পারবে)
+    // validation the user
     if (!currentUser || currentUser.userRoleName !== 'admin') {
       res.status(403).json({
         success: false,
@@ -309,5 +309,131 @@ const approveProduct = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// update single product
+const updateSingleProduct = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get all data and token
+    const { id } = req.params;
+    const { name, description, price, limit } = req.body;
+    const currentUser = req.user;
 
-export {createProduct, getAdminProduct, getAllProduct, getSingleProduct, approveProduct};
+    // validation the current user
+    if (!currentUser || currentUser.userRoleName !== 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Access Denied! Only Admin can update product details.',
+      });
+      return;
+    }
+
+    // check the user id
+    const productExists = await Product.findById(id);
+    if (!productExists) {
+      res.status(404).json({
+        success: false,
+        message: 'Product not found!',
+      });
+      return;
+    }
+
+    // dynamic update object create
+    const updateData: any = {};
+
+    // set previous name if not get user
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+
+    // set description name if not get user
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    // set previous price if not get user
+    if (price !== undefined) {
+      updateData.price = Number(price);
+    }
+
+    // set previous limit if not get user
+    if (limit !== undefined) {
+      updateData.limit = Number(limit);
+    }
+
+    // check image
+    if (req.file) {
+
+      // get the image path
+      const filePath = req.file.path;
+
+      // convert local file to Base64
+      const fileData = fs.readFileSync(filePath);
+      const base64Image = fileData.toString("base64");
+
+      // creating formData for ImgBB
+      const params = new URLSearchParams();
+      params.append("image", base64Image);
+
+      // sending post request to imagebb api
+      const imgbbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+        params
+      );
+
+      // push to live url object if upload is successful
+      if (imgbbResponse.data && imgbbResponse.data.data.url) {
+        updateData.image = imgbbResponse.data.data.url;
+      }
+
+      // delete the upload file from local folder after successful upload
+      fs.unlinkSync(filePath);
+    }
+
+    // push to live url object if upload is successful
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'No fields provided for update (name, description, price, limit, or image required).',
+      });
+      return;
+    }
+
+    // set the user update data
+    const updatedProduct = await Product.findByIdAndUpdate(id,{ $set: updateData },{ new: true, runValidators: true });
+
+    if (!updatedProduct) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid Product Update Request.',
+      });
+      return;
+    } else {
+      res.status(200).json({
+        success: true,
+        message: 'Product updated successfully by Admin!',
+        data: updatedProduct,
+      });
+      return;
+    }
+
+  } catch (error: any) {
+    console.log("product update server error.");
+    console.log(error.message);
+
+    // if user is not update clean the image
+    if (req.file && req.file.path) {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        console.log('Error occurred! Cleanup done: Local uploaded file deleted.');
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during product update.'
+    });
+    return;
+  }
+};
+
+
+export {createProduct, getAdminProduct, getAllProduct, getSingleProduct, approveProduct, updateSingleProduct};
