@@ -2,8 +2,6 @@ import { Request, Response } from 'express';
 import Payment from '../models/payment';
 
 
-
-
 // create payment
 const createPayment = async (req: Request, res: Response): Promise<void> => {
   try{
