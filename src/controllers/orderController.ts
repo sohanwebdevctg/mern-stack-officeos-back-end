@@ -82,4 +82,73 @@ const createOrder = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export {createOrder};
+// get single user orders
+const getSingleUserOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user token
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // find all orders for this specific user and populate product details
+    const userOrders = await Order.find({ user: currentUser.userId }).populate('orderItems.product').populate('user');
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      message: "User orders fetched successfully.",
+      data: userOrders,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('get single user orders error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching orders.'
+    });
+    return;
+  }
+};
+
+// delete user order
+const deleteUserOrder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const currentUser = req.user;
+    const { id } = req.params;
+
+    if (!currentUser) {
+      res.status(401).json({ success: false, message: 'Unauthorized!' });
+      return;
+    }
+
+    
+    const deletedOrder = await Order.findByIdAndDelete(id);
+
+    if (!deletedOrder) {
+      res.status(404).json({ success: false, message: 'Order not found!' });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Order deleted successfully!',
+    });
+    return;
+
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+    return;
+  }
+};
+
+export { createOrder, getSingleUserOrders, deleteUserOrder };
