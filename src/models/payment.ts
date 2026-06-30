@@ -1,20 +1,26 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IOrder extends Document {
+export interface IPayment extends Document {
   user: mongoose.Types.ObjectId;
+  orderId: string;
   orderItems: {
     product: mongoose.Types.ObjectId;
     quantity: number;
     price: number;
   }[];
-  totalBill: number;
-  status: 'Pending' | 'Approved';
+  totalPrice: number;
+  paymentNumber: string;
+  date: Date;
 }
 
-const OrderSchema = new Schema({
+const PaymentSchema = new Schema({
   user: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
+    required: true 
+  },
+  orderId: { 
+    type: String, 
     required: true 
   },
   orderItems: [
@@ -27,23 +33,26 @@ const OrderSchema = new Schema({
       quantity: { 
         type: Number, 
         required: true 
-      }, 
+      },
       price: { 
         type: Number, 
         required: true 
       }
     }
   ],
-  totalBill: { 
+  totalPrice: { 
     type: Number, 
     required: true 
   },
-  status: { 
+  paymentNumber: { 
     type: String, 
-    enum: ['Pending', 'Approved'], 
-    default: 'Pending' 
+    required: true 
+  }, 
+  date: { 
+    type: Date, 
+    default: Date.now 
   }
 }, { timestamps: true });
 
-const Order = mongoose.model<IOrder>('Order', OrderSchema);
-export default Order;
+const Payment = mongoose.model<IPayment>('Payment', PaymentSchema);
+export default Payment;

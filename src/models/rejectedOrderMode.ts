@@ -12,7 +12,7 @@ export interface IRejectedOrder extends Document {
   isViewedByByUser: boolean;
 }
 
-const RejectedOrderSchema: Schema = new Schema({
+const RejectedOrderSchema = new Schema({
   user: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
