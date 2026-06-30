@@ -7,7 +7,7 @@ import isAdmin from '../middlewares/adminMiddleware';
 const router = Router();
 
 // order router and controller
-router.post('/createOrder', createOrder);
+router.post('/createOrder', verifyToken, createOrder);
 
 
 export default router;
