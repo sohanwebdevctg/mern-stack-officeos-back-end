@@ -151,4 +151,43 @@ const deleteUserOrder = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export { createOrder, getSingleUserOrders, deleteUserOrder };
+// all order manager
+const getAllOrderManager = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // find all orders from database, populate user details and product details
+    const allOrders = await Order.find({}).populate('user', 'name email').populate('orderItems.product').sort({ createdAt: -1 });
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      message: 'All manager orders fetched successfully.',
+      data: allOrders,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('get all manager orders error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching manager orders.',
+    });
+    return;
+  }
+};
+
+
+
+export { createOrder, getSingleUserOrders, deleteUserOrder, getAllOrderManager };
