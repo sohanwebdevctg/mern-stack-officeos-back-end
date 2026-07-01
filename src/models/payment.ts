@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPayment extends Document {
   user: mongoose.Types.ObjectId;
-  orderId: string;
+  orderId: mongoose.Types.ObjectId;
   orderItems: {
     product: mongoose.Types.ObjectId;
     quantity: number;
@@ -20,7 +20,8 @@ const PaymentSchema = new Schema({
     required: true 
   },
   orderId: { 
-    type: String, 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Order', 
     required: true 
   },
   orderItems: [

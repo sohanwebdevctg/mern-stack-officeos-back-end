@@ -7,7 +7,7 @@ import isAdmin from '../middlewares/adminMiddleware';
 const router = Router();
 
 // payment router and controller
-router.post('/createPayment', createPayment);
+router.post('/createPayment',verifyToken, isAdmin, createPayment);
 
 
 
