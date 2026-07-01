@@ -188,6 +188,100 @@ const getAllOrderManager = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// all order admin
+const getAllOrderAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const currentUser = req.user;
+
+    // validation the user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // find all orders from database, populate user details and product details
+    const allOrders = await Order.find({}).populate('user', 'name email').populate('orderItems.product').sort({ createdAt: -1 });
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      message: 'All admin orders fetched successfully.',
+      data: allOrders,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('get all admin orders error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching admin orders.',
+    });
+    return;
+  }
+};
+
+// approved order
+const approvedOrder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const currentUser = req.user;
+    const { id } = req.params;
+
+    // checking valid user
+    if (!currentUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Unauthorized! Please login first.',
+      });
+      return;
+    }
+
+    // find order id
+    const order = await Order.findById(id);
+    if (!order) {
+      res.status(404).json({
+        success: false,
+        message: 'Order not found with this ID.',
+      });
+      return;
+    }
+
+    // checking the order status
+    if (order.status === 'Approved') {
+      res.status(400).json({
+        success: false,
+        message: 'This order is already approved.',
+      });
+      return;
+    }
+
+    // change order status
+    order.status = 'Approved';
+    await order.save();
+
+    // send success response
+    res.status(200).json({
+      success: true,
+      message: 'Order status updated to Approved successfully.',
+      data: order,
+    });
+    return;
+
+  } catch (error: any) {
+    console.log(error.message);
+    console.log('approved order controller error.');
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during approving the order.',
+    });
+    return;
+  }
+};
 
 
-export { createOrder, getSingleUserOrders, deleteUserOrder, getAllOrderManager };
+export { createOrder, getSingleUserOrders, deleteUserOrder, getAllOrderManager, getAllOrderAdmin, approvedOrder };
