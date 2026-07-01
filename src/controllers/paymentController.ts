@@ -62,4 +62,85 @@ const createPayment = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export {createPayment};
+// all payment admin
+const getAllPaymentAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    
+    // payment data
+    const payments = await Payment.find().populate('user', 'name email').populate('orderItems.product', 'name image price').sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Admin payment history fetched successfully.",
+      data: payments
+    });
+    return;
+  } catch (error: any) {
+    console.error(" Get All Payment Admin Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching admin payments.'
+    });
+    return;
+  }
+};
+
+// all payment manager
+const getAllPaymentManager = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    // payment data
+    const payments = await Payment.find()
+      .populate('user', 'name email')
+      .populate('orderItems.product', 'name image price')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Manager payment history fetched successfully.",
+      data: payments
+    });
+    return;
+  } catch (error: any) {
+    console.error(" Get All Payment Manager Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching manager payments.'
+    });
+    return;
+  }
+};
+
+// get single user payment
+const getSingleUserPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // get user id
+    const { id: userId } = req.params;
+
+    if (!userId) {
+      res.status(400).json({ success: false, message: "User ID is required in params!" });
+      return;
+    }
+
+    // find that user's payment history in the database
+    const userPayments = await Payment.find({ user: userId }).populate('user', 'name email').populate('orderItems.product', 'name').sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "User payment history fetched successfully.",
+      data: userPayments
+    });
+    return;
+  } catch (error: any) {
+    console.error(" Get Single User Payment Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal Server Error during fetching user payments.'
+    });
+    return;
+  }
+};
+
+
+export { createPayment, getAllPaymentAdmin, getAllPaymentManager, getSingleUserPayment };
+
